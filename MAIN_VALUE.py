@@ -1,10 +1,12 @@
 import pygame, sys
 from pygame.math import Vector2 as vector
 
-tile = 20
+tile = 15
 SCREEN = 870
-SCREEN_WIDTH_SETTING = 800
-SCREEN_HIGHT_SETTING = 600
+SCREEN_WIDTH = 1020
+SCREEN_HIGHT = 600
+SCREEN_WIDTH_SETTING = 600 #1720
+SCREEN_HIGHT_SETTING = 600 #820
 
 def tile_size() :
     return tile
