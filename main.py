@@ -237,7 +237,7 @@ class Mobile_Robot(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.color = color
-        self.image = pygame.transform.scale(pygame.image.load("Something-Tycoon-/duck_with_knife_ver2.png").convert_alpha(), (tile_size, tile_size))
+        self.image = pygame.transform.scale(pygame.image.load("duck_with_knife_ver2.png").convert_alpha(), (tile_size, tile_size))
         self.rect = self.image.get_rect(topleft=(self.x, self.y))
         self.hitbox_rect = self.rect.inflate(-76, -36)
         self.rect.center = self.hitbox_rect.center
