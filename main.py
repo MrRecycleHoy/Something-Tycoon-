@@ -6,8 +6,8 @@ import MAIN_VALUE
 
 # GAME WINDOW
 pygame.init()
-SCREEN_WIDTH_SETTING = MAIN_VALUE.SCREEN_SETTING_size()[0]
-SCREEN_HEIGHT_SETTING = MAIN_VALUE.SCREEN_SETTING_size()[1]
+SCREEN_WIDTH_SETTING = MAIN_VALUE.SCREEN_WIDTH
+SCREEN_HEIGHT_SETTING = MAIN_VALUE.SCREEN_HIGHT
 SCREEN_WIDTH = MAIN_VALUE.SCREEN_SETTING_size()[0] #600
 SCREEN_HIGHT = MAIN_VALUE.SCREEN_SETTING_size()[1] #600
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH_SETTING, SCREEN_HEIGHT_SETTING))
@@ -28,8 +28,11 @@ world_data = []
 # Create wall group
 wall_group = pygame.sprite.Group()
 
-# Create wall group
+# Create path group
 path_group = pygame.sprite.Group()
+
+# Create button group
+button_group = pygame.sprite.Group()
 
 # Define spawn position for the mobile robot
 spawn_position = ()
@@ -43,6 +46,7 @@ GREY = (60, 60, 60)
 BG = (50, 50, 50)
 GREEN = (100, 255, 10)
 BLUE = (70, 130, 255)
+DARKBLUE = (0, 0, 129)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 YELLOW = (255, 255, 0)
@@ -148,11 +152,53 @@ def display_text(txt, color, font, x, y) :
     SCREEN.blit(text, (x, y))
 
 def end_journey(quantities, time) :
+
+    alpha_value = 255
+    FONT1 = pygame.font.SysFont('Futura', 17)
+
+    # Create a semi-transparent surface
+    transparent_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT_SETTING))
+    transparent_surface.set_alpha(179)  # 30% transparency (76/255 ≈ 0.30)
+    transparent_surface.fill(GREY)
     # Fill the screen
-    SCREEN.fill(GREY)
+    SCREEN.blit(transparent_surface, (0, 0))
+
+    total = 0
+    layer1 = 0
+    for i in range(len(task)):
+        display_text(f'Robot Number: {i+1}   Done Task : {task[i]} boxes', WHITE, FONT1, 25, 25 + layer1)
+        layer1 += 55
+        total += task[i]
+    display_text(f'Total tasks : {total}', WHITE, FONT1, 500, 720)
+
+    layer2 = 0
+    for i in range(len(Operating_time)):
+        display_text(f'Time : {Operating_time[i]}', WHITE, FONT1, 250, 25 + layer2)
+        total_time = 0
+        for d in Operating_time[i] :
+            total_time += d
+        display_text(f'Total Time : {total_time:.3f} seconds', WHITE, FONT1, 550, 25 + layer2)
+        layer2 += 55
+
+    layer3 = 0
+    for i in range(len(Distance)):
+        display_text(f'Distance : {Distance[i]}', WHITE, FONT1, 251, 45 + layer3)
+        total_distance = 0
+        for d in Distance[i] :
+            total_distance += d
+        display_text(f'Total Distance : {total_distance} cells', WHITE, FONT1, 550, 45 + layer3)
+        layer3 += 55
+
+    tag_target = 1
+    layer4 = 0
+    for i in Object_in_target :
+        print(f'Target {tag_target} : {i}')
+        display_text(f'Target number : {tag_target}    Amount of Objects : {i}', WHITE, FONT1, 500, 680 + layer4)
+        layer4 += 20
+        tag_target += 1
 
     # Display the end game text
-    display_text(f'Mission done : {quantities} pieces in {time} seconds', WHITE, FONT, 150, 295)
+    #display_text(f'Mission done : {quantities} pieces in {time} seconds', WHITE, FONT, 150, 295)
 
 def col_change_breathe(color: list, direction: list) -> None:
     """
@@ -237,8 +283,9 @@ class Mobile_Robot(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.color = color
-        self.image = pygame.transform.scale(pygame.image.load("duck_with_knife_ver2.png").convert_alpha(), (tile_size, tile_size))
+        self.image = pygame.transform.scale(pygame.image.load("mobile_robot_mark1.png").convert_alpha(), (tile_size * 2, tile_size * 2))
         self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        self.rect_demo = self.image.get_rect(topleft=(self.x, self.y))
         self.hitbox_rect = self.rect.inflate(-76, -36)
         self.rect.center = self.hitbox_rect.center
         self.rotate = 0
@@ -259,15 +306,19 @@ class Mobile_Robot(pygame.sprite.Sprite):
         self.orinal_position = self.rect
         
         # Keep position of snake inside of tiles
-        self.rect.x = self.x * tile_size
-        self.rect.y = self.y * tile_size
+        self.rect_demo.x = (self.x * tile_size) - (tile_size//2) - 1 
+        self.rect_demo.y = (self.y * tile_size) - (tile_size//2) - 1
+
+        self.rect.x = (self.x * tile_size)
+        self.rect.y = (self.y * tile_size)
 
         # Draw the robot on the screen
-        SCREEN.blit(self.image, self.rect)
+        SCREEN.blit(self.image, self.rect_demo)
     
     def mini_update(self) :
 
         # Fill the robot with color
+        self.image = pygame.Surface((tile_size, tile_size))
         self.image.fill(self.color)
 
         # Keep position of snake inside of tiles
@@ -369,6 +420,51 @@ class Home_Position() :
     def draw(self) :
         SCREEN.blit(self.image, self.rect)
 
+class Button(pygame.sprite.Sprite) :
+    def __init__(self, x, y, color) :
+        super().__init__()
+
+        self.x = x
+        self.y = y
+        self.color = color
+        self.image = pygame.Surface((tile_size, tile_size))
+        self.image.fill(self.color)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x * tile_size
+        self.rect.y = self.y * tile_size
+
+    #def push_add(self, x, y) :
+
+class Cell_Button(pygame.sprite.Sprite) :
+    def __init__(self, x, y, scale, color) :
+        super().__init__()
+
+        self.x = x
+        self.y = y
+        self.color = color
+        self.image = pygame.Surface((tile_size * scale[0], tile_size * scale[1]))
+        self.image.fill(self.color)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x * tile_size
+        self.rect.y = self.y * tile_size
+
+    def draw(self) :
+        SCREEN.blit(self.image, self.rect)
+
+class Functional_Button() :
+    def __init__(self, x, y, scale, image) :
+        super().__init__()
+
+        self.x = x
+        self.y = y
+        self.image = pygame.transform.scale(pygame.image.load(image).convert_alpha(), (tile_size * scale[0], tile_size * scale[1]))
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x * tile_size
+        self.rect.y = self.y * tile_size
+
+    def draw(self) :
+        SCREEN.blit(self.image, self.rect)
+
 # Camera class
 class Camera:
     def __init__(self, width, height):
@@ -409,20 +505,64 @@ wall_group = wall_components[1]
 # Collection
 walls = wall_components[2]
 
+# Create Button
+start_w = (((MAIN_VALUE.SCREEN_WIDTH//tile_size) - (MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size))//2) + (MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size) - (120//tile_size)
+end_w = (((MAIN_VALUE.SCREEN_WIDTH//tile_size) - (MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size))//2) + (MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size) + (120//tile_size)
+start_h = ((MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size)//2) - (300//tile_size)
+end_h = ((MAIN_VALUE.SCREEN_WIDTH_SETTING//tile_size)//2) + (360//tile_size)
+frame_button = [[i for i in range(start_w, end_w)] for i in range(start_h, end_h)]
+button_column = [i for i in range(start_w, end_w)]
+button_row = [i for i in range(start_h, end_h)]
+
+for i in range(start_h, end_h) :
+    for j in range(start_w, end_w) :
+        button = Button(j, i, WHITE)
+        button_group.add(button)
+
+plus_button = Functional_Button(button_column[2], button_row[2], [4,4], "plus_icon.png")
+minus_button = Functional_Button(button_column[-6], button_row[2], [4,4], "minus_icon.png")
+robot_button_cell = Cell_Button(button_column[(len(button_column)//2) - 6], button_row[8], [12,5], DARKBLUE)
+robot_button = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[9], [3,3], "mobile_robot.png")
+object_button_cell = Cell_Button(button_column[(len(button_column)//2) - 6], button_row[14], [12,5], DARKBLUE)
+object_button = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[15], [3,3], "object.png")
+target_button_cell = Cell_Button(button_column[(len(button_column)//2) - 6], button_row[20], [12,5], DARKBLUE)
+target_button = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[21], [3,3], "target.png")
+change_position_button_cell = Cell_Button(button_column[(len(button_column)//2) - 6], button_row[26], [12,5], PURPLE)
+reset_button_cell = Cell_Button(button_column[(len(button_column)//2) - 6], button_row[32], [12,5], RED)
+start_stop = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[38], [5,5], "Start_button.png")
+
+def on_click(col, row, size, color, border_color) :
+    outside_on_click_cell = Cell_Button(col, row, [size[0], size[1]], border_color)
+    inside_on_click_cell  = Cell_Button(col+1, row, [size[0]-1, size[1]], color)
+    return outside_on_click_cell, inside_on_click_cell
+
+onclick_robot_button_cell = on_click(button_column[(len(button_column)//2) - 6], button_row[8], [12,5], DARKBLUE, CYAN)
+onclick_object_button_cell = on_click(button_column[(len(button_column)//2) - 6], button_row[14], [12,5], DARKBLUE, CYAN)
+onclick_target_button_cell = on_click(button_column[(len(button_column)//2) - 6], button_row[20], [12,5], DARKBLUE, CYAN)
+onclick_change_position_button_cell = on_click(button_column[(len(button_column)//2) - 6], button_row[26], [12,5], PURPLE, PINK)
+
+
 # Create the mobile robot
 spawn_position = random_zero_coordinates(grid)
 multi_mobile_robot = multi_robot(amount_robot)
-storage = [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot]
+original_robot_position = [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot]
 a = [0 for i in range(0, amount_robot)]
 
 # Create Object
 all_object = multi_object(amount_object)
+original_object_pos_position = [[Object.pos[0], Object.pos[1]] for Object in all_object]
+original_object_position = [[Object.x, Object.y] for Object in all_object]
+original_object_rect_position = [[Object.rect.x, Object.rect.y] for Object in all_object]
 
 # Create Target
 all_target = multi_target(amount_target)
+original_target_pos_position = [[Target.pos[0], Target.pos[1]] for Target in all_target]
+original_target_position = [[Target.x, Target.y] for Target in all_target]
+original_target_rect_position = [[Target.rect.x, Target.rect.y] for Target in all_target]
 
 # Create Home
 home = Home_Position(WHITE)
+original_home_target = home
 
 # Create the mini-mobile robot
 mini_mobile_robot = mini_robot(amount_robot)
@@ -432,6 +572,7 @@ quantities = 0
 
 # MAIN LOOB
 point = [0 for i in range(0, amount_robot)]
+button_type = ["None"]
 identify = 0
 j = [0 for i in range(0, amount_robot)]
 list_of_tag = [i for i in range(0, amount_robot)]
@@ -445,17 +586,35 @@ original_path = []
 count = 0
 original_list = [i for i in range(0, len(all_object))]
 check = [False for i in range(0, amount_robot)]
-tag_object = [original_list[i:i + len(all_object)//len(multi_mobile_robot)] for i in range(0, len(original_list), len(all_object)//len(multi_mobile_robot))]
-if len(tag_object) != len(multi_mobile_robot) :
-    for i in tag_object[-1] :
-        tag_object[-2].append(i)
-    tag_object.pop(-1)
+mouse_clicked = False  # Flag to track if the mouse was clicked
+second_mouse_click = False
+change_position_condition = False
+start_stop_check = [False for i in range(0, 3)]
+start_check = 0
+condition = 0
+
+# STATIC
+# Time of each robot to done its one task
+robot_timer = [0 for i in range(0, amount_robot)]
+past_time = [0 for i in range(0, amount_robot)]
+Operating_time = [[] for i in range(0, amount_robot)]
+
+# The number of objects of each target
+Object_in_target = [0 for i in range(0, amount_target)]
+
+# Distance of each robot when they do one task (j values)
+half_path = [0 for i in range(0, amount_robot)]
+Distance = [[] for i in range(0, amount_robot)]
+
 #camera = Camera(SCREEN_WIDTH_SETTING*2, SCREEN_HEIGHT_SETTING*2)
 run = True
 while run:
     col_change_breathe(def_col, col_dir)
     # Set frame rate
     clock.tick(FPS)
+
+    # Get mouse position
+    mouse_pos = pygame.mouse.get_pos()
 
     # Draw grid
     draw_grid(tile_size)
@@ -473,6 +632,36 @@ while run:
 
     # Draw walls
     wall_group.draw(SCREEN)
+
+    # Draw button
+    button_group.draw(SCREEN)
+    plus_button.draw()
+    minus_button.draw()
+    robot_button_cell.draw()
+    robot_button.draw()
+    object_button_cell.draw()
+    object_button.draw()
+    target_button_cell.draw()
+    target_button.draw()
+    change_position_button_cell.draw()
+    reset_button_cell.draw()
+    start_stop.draw()
+    if button_type[0] == "Robot" :
+        onclick_robot_button_cell[0].draw()
+        onclick_robot_button_cell[1].draw()
+        robot_button.draw()
+    if button_type[0] == "Object" :
+        onclick_object_button_cell[0].draw()
+        onclick_object_button_cell[1].draw()
+        object_button.draw()
+    if button_type[0] == "Target" :
+        onclick_target_button_cell[0].draw()
+        onclick_target_button_cell[1].draw()
+        target_button.draw()
+
+    if mouse_clicked or second_mouse_click:
+        onclick_change_position_button_cell[0].draw()
+        onclick_change_position_button_cell[1].draw()
 
     # Draw path
     path_group.draw(SCREEN)
@@ -505,7 +694,6 @@ while run:
             if all_target[number_target].rect.colliderect(multi_mobile_robot[number].rect) and multi_mobile_robot[number].capacity != multi_mobile_robot[number].Maximum_capacity:
                 all_target[number_target].image.fill(multi_mobile_robot[number].color)
                 multi_mobile_robot[number].capacity = multi_mobile_robot[number].Maximum_capacity
-                quantities += 1
                 
                 if point[number] == 1 :
                     #all_target[number] = Target_Position(def_col)
@@ -517,8 +705,13 @@ while run:
     timer = pygame.time.get_ticks() // 1000
 
     # Display quantities and time
-    display_text(f'Time : {start_time + timer} seconds', WHITE, FONT, 5, 5)
-    display_text(f'Quantities : {quantities}', WHITE, FONT, 400, 5)
+    display_text(f'Time : {start_time + timer} seconds', WHITE, FONT, 775, 5)
+    display_text(f'Quantities : {quantities}', WHITE, FONT, 775, 30)
+    display_text(f'Number of Robot : {amount_robot}', WHITE, FONT, 1075, 5)
+    display_text(f'Number of Object : {amount_object}', WHITE, FONT, 1075, 30)
+    display_text(f'Number of Target : {amount_target}', WHITE, FONT, 1075, 55)
+    display_text(f'NEW POSITION', WHITE, FONT, button_column[(len(button_column)//2) - 5] * tile_size, button_row[28] * tile_size)
+    display_text(f'RESET', WHITE, FONT, button_column[(len(button_column)//2) - 2] * tile_size, button_row[34] * tile_size)
 
     # Display end game screen
     if len(all_object) > 0:
@@ -528,6 +721,7 @@ while run:
 
     # Event handler
     for event in pygame.event.get():
+        update = False
         # Quit
         if event.type == pygame.QUIT:
             run = False
@@ -539,8 +733,380 @@ while run:
             #wall = Walls(x, y, BLUE)
             #wall_group.add(wall)
             print(x, y)
+        
+        # Robot button
+        if robot_button_cell.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click Robot")
+                button_type[0] = "Robot"
+
+        # Object button
+        elif object_button_cell.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click Object")
+                button_type[0] = "Object"
+
+        # Target button
+        elif target_button_cell.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click Target")
+                button_type[0] = "Target"
+        
+        # New Position button
+        elif change_position_button_cell.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click New Position")
+                mouse_clicked = True
+                condition = 0
+        
+        # Reset button
+        elif reset_button_cell.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click Reset")
+                count = 0
+                amount_robot = len(original_robot_position)
+                amount_object = len(original_object_position)
+                amount_target = len(original_target_position)
+                multi_mobile_robot = multi_robot(amount_robot)
+                all_object = multi_object(amount_object)
+                all_target = multi_target(amount_target)
+                home = Home_Position(WHITE)
+                mini_mobile_robot = mini_robot(amount_robot)
+                
+                for tag in range(0, len(multi_mobile_robot)) :
+                    multi_mobile_robot[tag].x, multi_mobile_robot[tag].y = original_robot_position[tag][0], original_robot_position[tag][1]
+
+                for tag in range(0, len(all_object)) :
+                    all_object[tag].pos[0], all_object[tag].pos[1] = original_object_pos_position[tag][0], original_object_pos_position[tag][1]
+                    all_object[tag].x, all_object[tag].y = original_object_position[tag][0], original_object_position[tag][1]
+                    all_object[tag].rect.x, all_object[tag].rect.y = original_object_rect_position[tag][0], original_object_rect_position[tag][1]
+
+                for tag in range(0, len(all_target)) :
+                    all_target[tag].pos[0], all_target[tag].pos[1] = original_target_pos_position[tag][0], original_target_pos_position[tag][1]
+                    all_target[tag].x, all_target[tag].y = original_target_position[tag][0], original_target_position[tag][1]
+                    all_target[tag].rect.x, all_target[tag].rect.y = original_target_rect_position[tag][0], original_target_rect_position[tag][1]
+
+                home = original_home_target
+
+                # Track the player's quantities
+                quantities = 0
+
+                # MAIN LOOB
+                point = [0 for i in range(0, amount_robot)]
+                button_type = ["None"]
+                identify = 0
+                j = [0 for i in range(0, amount_robot)]
+                list_of_tag = [i for i in range(0, amount_robot)]
+                limit = [0 for i in range(0, amount_robot)]
+                src = [0 for i in range(0, amount_robot)]
+                dest = [0 for i in range(0, amount_robot)]
+                all_path = [0 for i in range(0, amount_robot)]
+                path_to_target = [0 for i in range(0, amount_robot)]
+                task = [0 for i in range(0, amount_robot)]
+                original_path = []
+                count = 0
+                original_list = [i for i in range(0, len(all_object))]
+                check = [False for i in range(0, amount_robot)]
+                mouse_clicked = False  # Flag to track if the mouse was clicked
+                second_mouse_click = False
+                change_position_condition = False
+                start_stop_check = [False for i in range(0, 3)]
+                start_check = 0
+                condition = 0
+                start_stop = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[38], [5,5], "Start_button.png")
+
+                # STATIC
+                # Time of each robot to done its one task
+                robot_timer = [0 for i in range(0, amount_robot)]
+                Operating_time = [[] for i in range(0, amount_robot)]
+                past_time = [0 for i in range(0, amount_robot)]
+
+                # The number of objects of each target
+                Object_in_target = [0 for i in range(0, amount_target)]
+
+                # Distance of each robot when they do one task (j values)
+                half_path = [0 for i in range(0, amount_robot)]
+                Distance = [[] for i in range(0, amount_robot)]
+
+        elif start_stop.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0]:
+                print("Click Start")
+                if start_check == 0 :
+                    start_stop_check[0] = True
+                    start_stop_check[1] = False 
+                    start_stop_check[2] = False
+                    start_stop = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[38], [5,5], "Stop_button.png")
+                    start_check += 1
+                else :
+                    if start_check%2 == 1 :
+                       start_stop_check[1] = False 
+                       start_stop_check[2] = True 
+                       start_stop = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[38], [5,5], "Play_button.png")
+                       start_check += 1
+                    else :
+                        start_stop_check[1] = True
+                        start_stop_check[2] = False
+                        start_stop = Functional_Button(button_column[(len(button_column)//2) - 2], button_row[38], [5,5], "Stop_button.png")
+                        start_check += 1
+                pygame.time.delay(100)
+
+        # After the event loop, check if the mouse was clicked and process it
+        if mouse_clicked and condition > 2:
+            if pygame.mouse.get_pressed()[0] and button_type[0] == "Robot" :
+                robot_position = [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] in robot_position:
+                    focused_robot = robot_position.index([x, y])
+                    second_mouse_click = True
+                    condition = 0
+                    mouse_clicked = False  # Reset the flag to avoid repeated clicks
+                else:
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Error Position", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Object" :
+                object_position = [[Object.x // tile_size, Object.y // tile_size] for Object in all_object]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] in object_position:
+                    focused_robot = object_position.index([x, y])
+                    second_mouse_click = True
+                    condition = 0
+                    mouse_clicked = False  # Reset the flag to avoid repeated clicks
+                else:
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Error Position", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Target" :
+                target_position = [[Target.x // tile_size, Target.y // tile_size] for Target in all_target]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] in target_position:
+                    focused_robot = target_position.index([x, y])
+                    second_mouse_click = True
+                    condition = 0
+                    mouse_clicked = False  # Reset the flag to avoid repeated clicks
+                else:
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Error Position", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+        
+        if second_mouse_click and condition > 2 :
+            if pygame.mouse.get_pressed()[0] and button_type[0] == "Robot" :
+                robot_position = [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] not in robot_position and [[Object.x // tile_size, Object.y // tile_size] for Object in all_object] and wall_group and [[Target.x, Target.y] for Target in all_target] :
+                    multi_mobile_robot[focused_robot].x, multi_mobile_robot[focused_robot].y = x, y
+                    second_mouse_click = False
+                else :
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Please select again", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+            
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Object" :
+                object_position = [[Object.x // tile_size, Object.y // tile_size] for Object in all_object]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] not in object_position and [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot] and wall_group and [[Target.x, Target.y] for Target in all_target] :
+                    all_object[focused_robot].pos[0], all_object[focused_robot].pos[1] = x, y
+                    all_object[focused_robot].x, all_object[focused_robot].y = x*tile_size, y*tile_size
+                    all_object[focused_robot].rect.x, all_object[focused_robot].rect.y = x*tile_size, y*tile_size
+                    second_mouse_click = False
+                else :
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Please select again", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+            
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Target" :
+                target_position = [[Target.x // tile_size, Target.y // tile_size] for Target in all_target]
+                x = int(pygame.mouse.get_pos()[0] / tile_size)
+                y = int(pygame.mouse.get_pos()[1] / tile_size)
+
+                if [x, y] not in target_position and [[mobile_robot.x, mobile_robot.y] for mobile_robot in multi_mobile_robot] and wall_group and [[Target.x, Target.y] for Target in all_target] :
+                    all_target[focused_robot].pos[0], all_target[focused_robot].pos[1] = x, y
+                    all_target[focused_robot].x, all_target[focused_robot].y = x*tile_size, y*tile_size
+                    all_target[focused_robot].rect.x, all_target[focused_robot].rect.y = x*tile_size, y*tile_size
+                    second_mouse_click = False
+                else :
+                    # Display the fading text or handle cases where no robot is clicked
+                    text = FONT.render("Please select again", True, WHITE)
+                    text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
+                    text_surface = text.convert_alpha()
+                    alpha_value = 255 
+                    change_position_condition = True
+                
+        condition += 1
+
+        # Plus button
+        if plus_button.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0] and button_type[0] == "Robot":
+                print("Clicked +")
+                amount_robot += 1
+                update_robot = multi_robot(1)
+                multi_mobile_robot.append(update_robot[0])
+                pygame.time.delay(100)
+                point.append(0)
+                j.append(0)
+                list_of_tag = [i for i in range(0, amount_robot)]
+                limit.append(0)
+                src.append(0)
+                dest.append(0)
+                all_path.append(0)
+                path_to_target.append(0)
+                task.append(0)
+                check.append(False)
+                a.append(0)
+                mini_mobile_robot = mini_robot(amount_robot)
+                robot_timer.append(0)
+                Operating_time.append([])
+                past_time.append(0)
+                half_path.append(0)
+                Distance.append([])
+                count = 0
+                update = True
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Object":
+                print("Clicked +")
+                amount_object += 1
+                update_object = multi_object(1)
+                all_object.append(update_object[0])
+                original_list = [i for i in range(0, len(all_object))]
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Target":
+                print("Clicked +")
+                amount_target += 1
+                update_target = multi_target(1)
+                all_target.append(update_target[0])
+                Object_in_target.append(0)
+        # Minus button
+        elif minus_button.rect.collidepoint(mouse_pos):
+            if pygame.mouse.get_pressed()[0] and button_type[0] == "Robot":
+                print("Clicked -")
+                if amount_robot > 1 :
+                    amount_robot -= 1
+                    for c in range(list_of_tag[-1], list_of_tag[0] - 1, -1) :
+                        if point[c] == 0 :
+                            multi_mobile_robot.pop(c-1)
+                            point.pop(c-1)
+                            j.pop(c-1)
+                            list_of_tag = [i for i in range(0, amount_robot)]
+                            limit.pop(c-1)
+                            src.pop(c-1)
+                            dest.pop(c-1)
+                            all_path.pop(c-1)
+                            path_to_target.pop(c-1)
+                            task.pop(c-1)
+                            check.pop(c-1)
+                            a.pop(c-1)
+                            mini_mobile_robot = mini_robot(amount_robot)
+                            robot_timer.pop(c-1)
+                            Operating_time.pop(c-1)
+                            past_time.pop(c-1)
+                            half_path.pop(c-1)
+                            Distance.pop(c-1)
+                            count = 0
+                            break
+                    pygame.time.delay(200)
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Object":
+                print("Clicked -")
+                if amount_object > 1 :
+                    amount_object -= 1
+                    all_object.pop(-1)
+                    original_list = [i for i in range(0, len(all_object))]
+            elif pygame.mouse.get_pressed()[0] and button_type[0] == "Target":
+                print("Clicked -")
+                if amount_target > 1 :
+                    amount_target -= 1
+                    all_target.pop(-1)
+                    Object_in_target.pop(-1)
+        
+        if update :
+            c = -1
+            all_path[c] = algoritm.shortest_way(multi_mobile_robot[c], all_object, grid)
+            original_path.append(all_path[c][0])
+            # Create a new list that excludes the element at index c
+            modified_original_path = original_path[:c] + original_path[c+1:]
+            if all_path[c-1] != 0 and all_path[c] != 0:
+                i = 0
+                while all_path[c][0] in modified_original_path and i < c:
+                    all_path[c] = shift_list_forward(all_path[c])
+                    while all_path[c][0] > len(all_object) :
+                        all_path[c] = shift_list_forward(all_path[c])
+                    original_path[c] = all_path[c][0]
+            # Create a new list that excludes the element at index c
+            modified_original_path = original_path[:c] + original_path[c+1:]
+            
+            src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
+            if point[c] == 0:
+                dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
+            elif point[c] == 1:
+                path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
+                dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
+            a[c] = algoritm.main(grid, src[c], dest[c])
+            half_path[c] = len(a[c])
+            limit[c] = len(a[c]) - 1
+            j[c] = 0
+            pygame.time.delay(300)
 
         c = list_of_tag[identify]
+
+        if start_stop_check[0] == True :
+            start_stop_check = [False, False, False]
+            for c in list_of_tag:
+                all_path[c] = algoritm.shortest_way(multi_mobile_robot[c], all_object, grid)
+                original_path.append(all_path[c][0])
+                # Create a new list that excludes the element at index c
+                modified_original_path = original_path[:c] + original_path[c+1:]
+                if all_path[c-1] != 0 and all_path[c] != 0:
+                    i = 0
+                    while all_path[c][0] in modified_original_path and i < c:
+                        all_path[c] = shift_list_forward(all_path[c])
+                        while all_path[c][0] > len(all_object) :
+                            all_path[c] = shift_list_forward(all_path[c])
+                        original_path[c] = all_path[c][0]
+                # Create a new list that excludes the element at index c
+                modified_original_path = original_path[:c] + original_path[c+1:]
+                
+                src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
+                if point[c] == 0:
+                    dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
+                elif point[c] == 1:
+                    path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
+                    dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
+                a[c] = algoritm.main(grid, src[c], dest[c])
+                limit[c] = len(a[c]) - 1
+                half_path[c] = len(a[c])
+                count = 1
+                j[c] = 0
+                past_time[c] = timer
+
+        elif start_stop_check[2] == True :
+            count = 0
+        
+        elif start_stop_check[1] == True :
+            count = 1
+            past_time[c] = timer
+
         # Key presses for moving the robot
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_1:
@@ -591,26 +1157,31 @@ while run:
                             original_path[c] = all_path[c][0]
                     # Create a new list that excludes the element at index c
                     modified_original_path = original_path[:c] + original_path[c+1:]
-                    for number_object in range(0, len(all_object)) :
-                        src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
-                        if point[c] == 0:
-                            dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
-                        elif point[c] == 1:
-                            dest[c] = [all_target[c].pos[0], all_target[c].pos[1]]
-                        a[c] = algoritm.main(grid, src[c], dest[c])
-                        limit[c] = len(a[c]) - 1
-                        count = 1
-                        j[c] = 0
+                    
+                    src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
+                    if point[c] == 0:
+                        dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
+                    elif point[c] == 1:
+                        path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
+                        dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
+                    a[c] = algoritm.main(grid, src[c], dest[c])
+                    limit[c] = len(a[c]) - 1
+                    half_path[c] = len(a[c])
+                    count = 1
+                    j[c] = 0
+                    task[c] += 1
                 
-
             elif event.key == pygame.K_w:
                 count = 0
+            
+            elif event.key == pygame.K_p:
+                count = 1
 
         elif event.type == pygame.KEYUP:
             multi_mobile_robot[c].moving = False
             multi_mobile_robot[c].dy = 0
             multi_mobile_robot[c].dx = 0
-    
+
     # Using algorithm to find path (A*)
     for c in list_of_tag: 
         if j[c] <= limit[c] and count == 1 and type(a[c]) == list and check[c] == False:
@@ -623,6 +1194,24 @@ while run:
                     continue
             multi_mobile_robot[c].moving = True
             path = a[c][j[c]]
+            past_path = a[c][j[c] - 1]
+            if [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [1, 0] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, 1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, 90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [1, 0] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, -1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, -90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [-1, 0] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, 1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, -90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [-1, 0] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, -1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, 90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [0, 1] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, 1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, -90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [0, 1] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, -1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, 90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [0, -1] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, 1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, 90)
+            elif [multi_mobile_robot[c].x - past_path[0], multi_mobile_robot[c].y - past_path[1]] == [0, -1] and [path[0] - multi_mobile_robot[c].x, path[1] - multi_mobile_robot[c].y] == [0, -1] :
+                multi_mobile_robot[c].image = pygame.transform.rotate(multi_mobile_robot[c].image, -90)
+
             multi_mobile_robot[c].x = path[0]
             multi_mobile_robot[c].y = path[1]
             if j[c] > 0:
@@ -630,11 +1219,21 @@ while run:
                 mini_mobile_robot[c].moving = True
                 mini_mobile_robot[c].x = mini_path[0]
                 mini_mobile_robot[c].y = mini_path[1]
+            
+            robot_timer[c] = pygame.time.get_ticks() / 1000
             j[c] += 1
         elif (j[c] > limit[c] or check[c] == True) and count == 1 :
             check[c] = False
             j[c] = 0
             src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
+            if point[c] == 0 and original_path[c] != -1:
+                task[c] += 1
+                Operating_time[c].append(round(robot_timer[c] - past_time[c] , 2))
+                past_time[c] = robot_timer[c]
+                robot_timer[c] = 0
+                Object_in_target[path_to_target[c][0]] += 1
+                quantities += 1
+
             if original_path[c] == -1 and point[c] == 0:
                 dest[c] = [home.pos[0], home.pos[1]]
             else :
@@ -655,31 +1254,47 @@ while run:
                         modified_original_path = original_path[:c] + original_path[c+1:]
                         if all_path[c][0] not in modified_original_path :
                             dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
+                            half_path[c] = len(a[c])
                         else :
                             dest[c] = [home.pos[0], home.pos[1]]
+                            half_path[c] = len(a[c])
                             original_path[c] = -1
-                        point[c] = 0 
+                        point[c] = 0
                     else :
                         dest[c] = [home.pos[0], home.pos[1]]
                         original_path[c] = -1
-                    task[c] += 1
                 elif point[c] == 1 :
                     path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
                     dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
-            score = 0
-            for amout_task in task :
-                score += amout_task
+            if point[c] == 1:
+                Distance[c].append(half_path[c]+len(a[c]))
+
             a[c] = algoritm.main(grid, src[c], dest[c])
             if type(a[c]) == list : 
                 limit[c] = len(a[c]) - 1
 
-        if point[c] == 1 and j[c] > 1:
+        if point[c] == 1 and j[c] > 2 and j[c] < len(a[c]) - 1:
             mini_mobile_robot[c].mini_update()
             mini_mobile_robot[c].move()
 
-    #print(original_path)
-    #print(f'all_path : {all_path}')
+    keys = pygame.key.get_pressed()
 
+    if keys[pygame.K_TAB]:
+        # Display the fading text while holding the Tab key
+        end_journey(quantities, end)
+    else:
+        # Reset alpha value when Tab is released
+        alpha_value = 255
+    
+    if change_position_condition == True and alpha_value > 0 :
+        # Gradually decrease alpha value to create fade effect
+        if alpha_value > 0:
+            alpha_value -= 20  # Decrease the alpha value (fades out)
+        else:
+            alpha_value = 0
+
+        text_surface.set_alpha(alpha_value)
+        SCREEN.blit(text_surface, text_rect)
 
     pygame.display.update()
     pygame.time.delay(100)
@@ -688,4 +1303,25 @@ for i in range(len(task)):
     print("Robot ", i+1, " : ", task[i])
     total += task[i]
 print("Total : ", total)
+
+for i in range(len(Operating_time)):
+    print("Robot timer ", i+1, " : ", Operating_time[i], end = " ")
+    total_time = 0
+    for d in Operating_time[i] :
+        total_time += d
+    print(f"Total time {i + 1} : {total_time:.3f}", end = "\n") 
+
+for i in range(len(Distance)):
+    print("Robot distance ", i+1, " : ", Distance[i], end = " ")
+    total_distance = 0
+    for d in Distance[i] :
+        total_distance += d
+    print("Total distance ", i+1, " : ", total_distance, end = "\n")
+
+tag_target = 1
+for i in Object_in_target :
+    print(f'Target {tag_target} : {i}')
+    tag_target += 1
+    
+
 pygame.quit()
