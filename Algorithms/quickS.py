@@ -3,29 +3,16 @@ import time
 
 def partition(arr, low, high):
 
-    pivot = arr[low]
+    pivot = arr[high]
     i = low - 1
-    j = high + 1
 
-    while (True):
-
-        # Find leftmost element greater than
-        # or equal to pivot
-        i += 1
-        while (arr[i] < pivot):
-            i += 1
-
-        # Find rightmost element smaller than
-        # or equal to pivot
-        j -= 1
-        while (arr[j] > pivot):
-            j -= 1
-
-        # If two pointers met.
-        if (i >= j):
-            return j
-
-        arr[i], arr[j] = arr[j], arr[i]
+    for j in range(low, high):
+        if arr[j] <= pivot:
+            i = i + 1
+            arr[i], arr[j] = arr[j], arr[i]
+    
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return (i + 1)
 
 def randpartition(arr, low, high):
     i = random.randint(low, high)
@@ -34,6 +21,8 @@ def randpartition(arr, low, high):
 
 # The QuickSort function implementation
 def quickSort(arr, low, high):
+    if len(arr) == 1:
+        return arr
     if (low < high):
 
         pi = randpartition(arr, low, high)
