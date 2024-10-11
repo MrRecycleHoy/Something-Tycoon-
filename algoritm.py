@@ -172,7 +172,7 @@ def shortest_way(mobile_robot, all_object, grid) :
         if object.pos != [0,0] :
             # Define the source and destination
             src = [mobile_robot.x, mobile_robot.y]
-            dest = object.pos
+            dest = [object.x // MAIN_VALUE.tile_size(), object.y // MAIN_VALUE.tile_size()]
 
             route = a_star_search(grid, src, dest, ROW, COL)
             if type(route) == list :
