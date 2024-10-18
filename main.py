@@ -53,6 +53,7 @@ YELLOW = (255, 255, 0)
 PURPLE = (140, 0, 255)
 PINK = (255, 0, 200)
 CYAN = (0, 255, 195)
+LIGHT_BROWN = (111, 78, 55)
 random_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 black = (0, 0, 0)
@@ -192,7 +193,6 @@ def end_journey(quantities, time) :
     tag_target = 1
     layer4 = 0
     for i in Object_in_target :
-        print(f'Target {tag_target} : {i}')
         display_text(f'Target number : {tag_target}    Amount of Objects : {i}', WHITE, FONT1, 500, 680 + layer4)
         layer4 += 20
         tag_target += 1
@@ -253,9 +253,9 @@ def multi_object(number) :
     #generate random collectable position
     list_object = []
     for i in range(0, number):
-        object = Object_Position(RED)
+        object = Object_Position(LIGHT_BROWN)
         while object.pos in [list_object[j].pos for j in range(0, len(list_object))] or object.pos in [[multi_mobile_robot[j].x, multi_mobile_robot[j].y] for j in range(0, len(multi_mobile_robot))]:
-            object = Object_Position(RED)
+            object = Object_Position(LIGHT_BROWN)
         list_object.append(object)
     return list_object
 
@@ -275,7 +275,7 @@ def shift_list_forward(lst):
         lst = lst[1:] + [lst[0]]
     return lst
 
-# CLASSES
+# CLASSESฌ
 
 class Mobile_Robot(pygame.sprite.Sprite):
     def __init__(self, x, y, color) :
@@ -913,7 +913,7 @@ while run:
                 if [x, y] not in robot_position and [[Object.x // tile_size, Object.y // tile_size] for Object in all_object] and wall_group and [[Target.x, Target.y] for Target in all_target] :
                     multi_mobile_robot[focused_robot].x, multi_mobile_robot[focused_robot].y = x, y
                     second_mouse_click = False
-                else :
+                else :  
                     # Display the fading text or handle cases where no robot is clicked
                     text = FONT.render("Please select again", True, WHITE)
                     text_rect = text.get_rect(center=(SCREEN_WIDTH_SETTING // 2, SCREEN_HEIGHT_SETTING // 2))
@@ -1142,41 +1142,6 @@ while run:
                 multi_mobile_robot[c].dy = multi_mobile_robot[c].velocity
                 multi_mobile_robot[c].dx = 0
 
-            elif event.key == pygame.K_s:
-                for c in list_of_tag:
-                    all_path[c] = algoritm.shortest_way(multi_mobile_robot[c], all_object, grid)
-                    original_path.append(all_path[c][0])
-                    # Create a new list that excludes the element at index c
-                    modified_original_path = original_path[:c] + original_path[c+1:]
-                    if all_path[c-1] != 0 and all_path[c] != 0:
-                        i = 0
-                        while all_path[c][0] in modified_original_path and i < c:
-                            all_path[c] = shift_list_forward(all_path[c])
-                            while all_path[c][0] > len(all_object) :
-                                all_path[c] = shift_list_forward(all_path[c])
-                            original_path[c] = all_path[c][0]
-                    # Create a new list that excludes the element at index c
-                    modified_original_path = original_path[:c] + original_path[c+1:]
-                    
-                    src[c] = [multi_mobile_robot[c].x, multi_mobile_robot[c].y]
-                    if point[c] == 0:
-                        dest[c] = [all_object[all_path[c][0]].pos[0], all_object[all_path[c][0]].pos[1]]
-                    elif point[c] == 1:
-                        path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
-                        dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
-                    a[c] = algoritm.main(grid, src[c], dest[c])
-                    limit[c] = len(a[c]) - 1
-                    half_path[c] = len(a[c])
-                    count = 1
-                    j[c] = 0
-                    task[c] += 1
-                
-            elif event.key == pygame.K_w:
-                count = 0
-            
-            elif event.key == pygame.K_p:
-                count = 1
-
         elif event.type == pygame.KEYUP:
             multi_mobile_robot[c].moving = False
             multi_mobile_robot[c].dy = 0
@@ -1266,6 +1231,7 @@ while run:
                 elif point[c] == 1 :
                     path_to_target[c] = algoritm.shortest_way(multi_mobile_robot[c], all_target, grid)
                     dest[c] = [all_target[path_to_target[c][0]].pos[0], all_target[path_to_target[c][0]].pos[1]]
+
             if point[c] == 1:
                 Distance[c].append(half_path[c]+len(a[c]))
 
