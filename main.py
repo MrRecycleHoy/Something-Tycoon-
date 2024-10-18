@@ -1248,9 +1248,6 @@ while run:
     if keys[pygame.K_TAB]:
         # Display the fading text while holding the Tab key
         end_journey(quantities, end)
-    else:
-        # Reset alpha value when Tab is released
-        alpha_value = 255
     
     if change_position_condition == True and alpha_value > 0 :
         # Gradually decrease alpha value to create fade effect
